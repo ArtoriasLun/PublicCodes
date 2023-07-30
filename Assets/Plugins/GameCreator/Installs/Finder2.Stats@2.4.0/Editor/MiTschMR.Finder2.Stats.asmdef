@@ -1,0 +1,21 @@
+{
+    "name": "MiTschMR.Finder2.Stats",
+    "rootNamespace": "MiTschMR.Finder2.Stats",
+    "references": [
+        "GUID:7ee140e2b797e44a4b177d0ae2266fa9",
+        "GUID:406c89e0bc84d48f4b079c3c4cd13320",
+        "GUID:291e0c3f8e44e4ecf87c826d88458542",
+        "GUID:9d6c564305cb960439681485e5ed9b03"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
