@@ -124,8 +124,8 @@ namespace ALUN
             }
             else
             {
-                int randomClone = UnityEngine.Random.Range(0,2);
-                
+                int randomClone = UnityEngine.Random.Range(0, 2);
+
                 // 使用轮盘赌选择策略生成新的基因
                 for (int i = 0; i < numGenesToAdd; i++)
                 {
@@ -233,91 +233,91 @@ namespace ALUN
         private List<float> generationRewards = new List<float>();
         private void OnGUI()
         {
-            guiStyle.normal.textColor = Color.white;
-            guiStyle.fontSize = 20;
-            guiStyle.alignment = TextAnchor.MiddleLeft; // 将文本对齐方式改为左对齐
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position);
+            Vector3 viewportPos = Camera.main.WorldToViewportPoint(transform.position);
 
-            float panelX = (Screen.width - panelSize.x) / 2 + panelPositionOffset.x;
-            float panelY = 20 + panelPositionOffset.y;
-
-            // 绘制面板背景色
-            GUI.DrawTexture(new Rect(panelX, panelY, panelSize.x, panelSize.y), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, panelBackgroundColor, 0f, 0f);
-
-            GUI.Box(new Rect(panelX, panelY, panelSize.x, panelSize.y), "", guiStyle);
-
-            // 显示文本
-            float labelX = panelX;
-            float labelY = panelY + 10; // 从面板的顶部开始，加上一个初始间距（例如 10）来设置第一个标签的 Y 轴位置
-            float labelWidth = panelSize.x;
-            float labelHeight = 20;
-            float labelMargin = 30; // 标签之间的间距
-
-            GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "代数: " + generation.ToString(), guiStyle);
-
-            labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
-            GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "种群大小: " + GetPopulationSizeProgressBar(), guiStyle);
-
-            labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
-            GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "最高奖励: " + GetHighestReward().ToString(), guiStyle);
-
-
-            GUIStyle buttonStyleP = new GUIStyle(GUI.skin.button);
-            buttonStyleP.normal.textColor = Color.white; // 按钮文字设置为纯黑色
-
-            GUIStyle buttonStyleM = new GUIStyle(GUI.skin.button);
-            buttonStyleM.normal.textColor = Color.white; // 按钮文字设置为纯黑色
-
-            // 这里使用了前面的代码来设定按钮的位置和大小
-            float buttonX = labelX;
-            float buttonY = labelY + labelMargin;
-            float buttonWidth = 100;
-            float buttonHeight = 30;
-
-            // 减少游戏速度的按钮
-            if (GUI.Button(new Rect(buttonX, buttonY, buttonWidth, buttonHeight), "速度 - 0.5", buttonStyleM) && Time.timeScale >= 1.0f)
+            // Check if the Transform is inside the camera's viewport
+            if (viewportPos.x >= 0 && viewportPos.x <= 1 && viewportPos.y >= 0 && viewportPos.y <= 1)
             {
-                Time.timeScale = Mathf.Max(0.5f, Time.timeScale - 0.5f);
+                float panelX = screenPos.x - panelSize.x / 2; // Subtract half the width
+                float panelY = Screen.height - screenPos.y - panelSize.y; // Subtract half the height
+
+                GUI.DrawTexture(new Rect(panelX, panelY, panelSize.x, panelSize.y), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, panelBackgroundColor, 0f, 0f);
+                GUI.Box(new Rect(panelX, panelY, panelSize.x, panelSize.y), "", guiStyle);
+
+                float labelX = panelX;
+                float labelY = panelY + 10;
+                float labelWidth = panelSize.x;
+                float labelHeight = 20;
+                float labelMargin = 30;
+
+                GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "代数: " + generation.ToString(), guiStyle);
+                labelY += labelMargin;
+
+                GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "种群大小: " + GetPopulationSizeProgressBar(), guiStyle);
+                labelY += labelMargin;
+
+                labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
+                GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "最高奖励: " + GetHighestReward().ToString(), guiStyle);
+
+
+                GUIStyle buttonStyleP = new GUIStyle(GUI.skin.button);
+                buttonStyleP.normal.textColor = Color.white; // 按钮文字设置为纯黑色
+
+                GUIStyle buttonStyleM = new GUIStyle(GUI.skin.button);
+                buttonStyleM.normal.textColor = Color.white; // 按钮文字设置为纯黑色
+
+                // 这里使用了前面的代码来设定按钮的位置和大小
+                float buttonX = labelX;
+                float buttonY = labelY + labelMargin;
+                float buttonWidth = 100;
+                float buttonHeight = 30;
+
+                // 减少游戏速度的按钮
+                if (GUI.Button(new Rect(buttonX, buttonY, buttonWidth, buttonHeight), "速度 - 0.5", buttonStyleM) && Time.timeScale >= 1.0f)
+                {
+                    Time.timeScale = Mathf.Max(0.5f, Time.timeScale - 0.5f);
+                }
+
+                buttonX += buttonWidth + 10; // 增加按钮之间的间距
+
+                // 增加游戏速度的按钮
+                if (GUI.Button(new Rect(buttonX, buttonY, buttonWidth, buttonHeight), "速度 + 0.5", buttonStyleP))
+                {
+                    Time.timeScale += 0.5f;
+                }
+
+                // 显示当前游戏速度的标签
+                float speedLabelX = buttonX + buttonWidth + 10;
+                float speedLabelY = buttonY;
+                float speedLabelWidth = labelWidth;
+                float speedLabelHeight = labelHeight;
+                GUI.Label(new Rect(speedLabelX, speedLabelY, speedLabelWidth, speedLabelHeight), "游戏速度: " + Time.timeScale.ToString(), guiStyle);
+
+                // 更新面板大小
+                float panelHeight = speedLabelY + speedLabelHeight + 10 - panelY;
+                panelSize.y = panelHeight;
+
+                // 更新面板位置
+                float panelXOffset = (Screen.width - panelSize.x) / 2 + panelPositionOffset.x;
+                float panelYOffset = 20 + panelPositionOffset.y;
+                float panelWidthOffset = panelSize.x;
+                float panelHeightOffset = panelSize.y;
+                GUI.Box(new Rect(panelXOffset, panelYOffset, panelWidthOffset, panelHeightOffset), "", guiStyle);
+
+                // 计算文本的位置
+                float textX = panelX + panelSize.x / 2 - 50;
+                float textY = panelY - labelHeight;
+
+                // 显示Box的文本信息在面板中间外部的顶部
+                GUI.Label(new Rect(textX, textY, 100, labelHeight), "生物进化面板", guiStyle);
+
+
+                // labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
+                // GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "FPS: " + fps.ToString("F2"), guiStyle);
             }
 
-            buttonX += buttonWidth + 10; // 增加按钮之间的间距
-
-            // 增加游戏速度的按钮
-            if (GUI.Button(new Rect(buttonX, buttonY, buttonWidth, buttonHeight), "速度 + 0.5", buttonStyleP))
-            {
-                Time.timeScale += 0.5f;
-            }
-
-            // 显示当前游戏速度的标签
-            float speedLabelX = buttonX + buttonWidth + 10;
-            float speedLabelY = buttonY;
-            float speedLabelWidth = labelWidth;
-            float speedLabelHeight = labelHeight;
-            GUI.Label(new Rect(speedLabelX, speedLabelY, speedLabelWidth, speedLabelHeight), "游戏速度: " + Time.timeScale.ToString(), guiStyle);
-
-            // 更新面板大小
-            float panelHeight = speedLabelY + speedLabelHeight + 10 - panelY;
-            panelSize.y = panelHeight;
-
-            // 更新面板位置
-            float panelXOffset = (Screen.width - panelSize.x) / 2 + panelPositionOffset.x;
-            float panelYOffset = 20 + panelPositionOffset.y;
-            float panelWidthOffset = panelSize.x;
-            float panelHeightOffset = panelSize.y;
-            GUI.Box(new Rect(panelXOffset, panelYOffset, panelWidthOffset, panelHeightOffset), "", guiStyle);
-
-            // 计算文本的位置
-            float textX = panelX + panelSize.x / 2 - 50;
-            float textY = panelY - labelHeight;
-
-            // 显示Box的文本信息在面板中间外部的顶部
-            GUI.Label(new Rect(textX, textY, 100, labelHeight), "生物进化面板", guiStyle);
-
-
-            // labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
-            // GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "FPS: " + fps.ToString("F2"), guiStyle);
-
-
-            DrawAverageRewardChart();
+            // DrawAverageRewardChart();
         }
 
         public List<float> ASCIIList = new List<float>();
