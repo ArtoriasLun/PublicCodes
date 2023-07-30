@@ -27,7 +27,7 @@ namespace ALUN
         {
             //TODO 这里要改成重置，而不是继承，继承应该在其他地方   
             creatureParameters.creatureGameInfo = creatureParametersDataset.GetParameterById(creatureParameters.id).creatureGameInfo;
-            creatureParameters.creatureNeuralInfo.fitness=neuralNetworkManager.creatureParameters.creatureNeuralInfo.fitness;
+            creatureParameters.creatureNeuralInfo.fitness = neuralNetworkManager.creatureParameters.creatureNeuralInfo.fitness;
             GetComponentInChildren<Animator>().speed = 1;
             creatureParameters.creatureGameFlag.isDied = false;
         }
@@ -67,6 +67,34 @@ namespace ALUN
         {
             Creature clone = ObjectPoolerManager.GetInstance(gameObject, transform.position, transform.rotation, transform.parent).GetComponent<Creature>();
             return clone;
+        }
+        public static RaycastHit RaycastForObstacle(Vector3 position, Vector3 direction, float distance)
+        {
+            // LayerMask for Terrain and Default layer
+            int obstacleLayerMask = 1 << LayerMask.NameToLayer("Terrain") | 1 << LayerMask.NameToLayer("Default");
+            RaycastHit hit;
+            if (Physics.Raycast(position, direction, out hit, distance, obstacleLayerMask))
+            {
+                return hit;
+            }
+
+            return hit;
+        }
+        public static IGrowable RaycastForFood(Vector3 position, Vector3 direction, float distance,out RaycastHit hit)
+        {
+            // LayerMask for Interactive layer
+            int foodLayerMask = 1 << LayerMask.NameToLayer("Interactive");
+            if (Physics.Raycast(position, direction, out hit, distance, foodLayerMask))
+            {
+                // Check if the hit object has the IGrowable component
+                IGrowable growableObject = hit.collider.gameObject.GetComponent<IGrowable>();
+                if (growableObject != null)
+                {
+                    return growableObject;
+                }
+            }
+
+            return null; // Return null if no IGrowable component found or no object hit
         }
     }
     [System.Serializable]

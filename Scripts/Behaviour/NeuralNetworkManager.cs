@@ -59,33 +59,45 @@ namespace ALUN
             float[] obstacleDistances = new float[rayDirections.Length];  // 初始化一个障碍物数组来存储每个方向的射线距离
             for (int i = 0; i < rayDirections.Length; i++)
             {
-                RaycastHit hit;  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
-                bool raycastHit = Physics.Raycast(position, rayDirections[i], out hit, creatureParameters.creatureNeuralInfo.obstacleRayDistance);  // 发射障碍物射线，并检查是否碰撞   
-                obstacleDistances[i] = raycastHit ? hit.distance : creatureParameters.creatureNeuralInfo.obstacleRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
-                Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], raycastHit ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色，否则为绿色
+                RaycastHit hit = Creature.RaycastForObstacle(position, rayDirections[i], creatureParameters.creatureNeuralInfo.obstacleRayDistance);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
+                obstacleDistances[i] = hit.collider != null ? hit.distance : creatureParameters.creatureNeuralInfo.obstacleRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
+
+                Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], hit.collider != null ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色，否则为绿色
             }
 
             //食物射线检测结果
             float[] foodDistances = new float[rayDirections.Length];  // 初始化一个食物数组来存储每个方向的射线距离
+            float[] foodNutrition = new float[rayDirections.Length];  // 初始化一个食物数组来存储每个方向的食物营养值
             for (int i = 0; i < rayDirections.Length; i++)
             {
-                RaycastHit hit;  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
-                bool raycastHit = Physics.Raycast(position, rayDirections[i], out hit, creatureParameters.creatureNeuralInfo.foodRayDistance);  // 发射食物射线，并检查是否碰撞   
-                foodDistances[i] = raycastHit ? hit.distance : creatureParameters.creatureNeuralInfo.foodRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
-                Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], raycastHit ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色，否则为绿色
+                RaycastHit hit;
+                IGrowable food = Creature.RaycastForFood(position, rayDirections[i], creatureParameters.creatureNeuralInfo.foodRayDistance, out hit);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
+                foodDistances[i] = food != null ? hit.distance : creatureParameters.creatureNeuralInfo.foodRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
+                foodNutrition[i] = food != null ? food.GetNutrition() : 0f;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
+                Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], food != null ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色，否则为绿色
             }
             float speed = rb.velocity.magnitude / creatureParameters.creatureGameInfo.moveSpeed;
             float rotateSpeed = rb.angularVelocity.magnitude / creatureParameters.creatureGameInfo.rotationSpeed;
+            float velocityAngle = Vector3.Angle(rb.velocity, Vector3.right);
             inputs[0] = speed;
             inputs[1] = rotateSpeed;
-            for (int i = 2; i < 10; i++)
+            inputs[2] = velocityAngle / 180f;
+            //将下面3个for的i值都增加1，因为前面已经有3个inputs了
+            for (int i = 3; i < 11; i++)
             {
-                inputs[i] = obstacleDistances[i - 2] / creatureParameters.creatureNeuralInfo.obstacleRayDistance;
+                inputs[i] = obstacleDistances[i - 3] / creatureParameters.creatureNeuralInfo.obstacleRayDistance;
             }
-            for (int i = 10; i < 18; i++)
+            for (int i = 11; i < 19; i++)
             {
-                inputs[i] = foodDistances[i - 10] / creatureParameters.creatureNeuralInfo.foodRayDistance;
+                inputs[i] = foodDistances[i - 11] / creatureParameters.creatureNeuralInfo.foodRayDistance;
             }
+            for (int i = 19; i < 27; i++)
+            {
+                inputs[i] = foodNutrition[i - 19] / 100f;
+            }
+            
+            //有多少inputs?
+            //计算得出inputs数量为27
 
             return inputs;
         }

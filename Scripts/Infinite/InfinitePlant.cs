@@ -99,6 +99,11 @@ public class InfinitePlant : MonoBehaviour, ILocalUpdatable,IGrowable
     {
        return nutrition;
     }
+
+    public GameObject GetGameObject()
+    {
+        return gameObject;
+    }
 }
 
 [System.Serializable]

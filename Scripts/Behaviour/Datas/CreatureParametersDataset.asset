@@ -23,10 +23,10 @@ MonoBehaviour:
     creatureGameFlag:
       isDied: 0
     creatureNeuralInfo:
-      inputCount: 18
+      inputCount: 27
       outputCount: 4
       hiddenLayerCount: 1
-      neuronPerHiddenLayer: 18
+      neuronPerHiddenLayer: 27
       foodRayDistance: 20
       obstacleRayDistance: 20
       reward: 0

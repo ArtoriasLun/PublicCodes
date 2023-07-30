@@ -44,25 +44,17 @@ namespace ALUN
             //检测周围的障碍物和食物
             for (int i = 0; i < rayDirections.Length; i++)
             {
-                // 检测障碍物
-                RaycastHit hit;
-                //检测layer是Terrain或者Default的物体为障碍物
+                RaycastHit obstacleHit = RaycastForObstacle(position, rayDirections[i], 1f);
+                if (obstacleHit.collider != null)
+                    PenaltyForCollision();
+                else
+                    FitnessForAvoidance();
 
-                bool obstacleHit = Physics.Raycast(position, rayDirections[i], out hit, 1, 1 << LayerMask.NameToLayer("Terrain") | 1 << LayerMask.NameToLayer("Default"));
-                if (obstacleHit) PenaltyForCollision();
-                else FitnessForAvoidance();
-
-                bool foodHit = Physics.Raycast(position, rayDirections[i], out hit, 1, 1 << LayerMask.NameToLayer("Interactive"));
-                if (foodHit)
+                RaycastHit foodHit;
+                IGrowable plant = RaycastForFood(position, rayDirections[i], 1f, out foodHit);
+                if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested)
                 {
-                    if (hit.collider.gameObject.tag == "Plant")
-                    {
-                        InfinitePlant plant = hit.collider.gameObject.GetComponent<InfinitePlant>();
-                        if (!plant.isHarvested)
-                        {
-                            FitnessForEating(plant.HarvestPlant());
-                        }
-                    }
+                    FitnessForEating(plant.HarvestPlant());
                 }
             }
 
@@ -132,6 +124,8 @@ namespace ALUN
             clone.neuralNetworkManager.neuralNetwork = this.neuralNetworkManager.neuralNetwork.Clone();
             return clone;
         }
+
+
 
     }
     [System.Serializable]
