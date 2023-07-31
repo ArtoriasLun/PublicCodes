@@ -107,7 +107,7 @@ namespace ALUN
             generation++;
             newGeneration = new List<CreatureGenome>();
 
-            
+
 
             // 使用轮盘赌选择策略生成新的生物
             float totalReward = lastGenerationCreatures.Sum(creature => creature.fitness);
@@ -323,6 +323,33 @@ namespace ALUN
                 GUI.Label(new Rect(textX, textY, 100, labelHeight), "生物进化面板", guiStyle);
 
 
+                // 获取当前的日期和时间，然后将其格式化为 "yyyyMMdd"
+                string date = DateTime.Now.ToString("yyyyMMdd");
+                string fileName = $"newGeneration-{date}.json";
+                // 创建 "导出" 按钮
+                if (GUI.Button(new Rect(panelXOffset + 10, panelYOffset + panelHeightOffset + 10, 100, 50), "导出"))
+                {
+                    // 导出最新的基因为json并且保存在一个json文件中
+                    string json = JsonUtility.ToJson(newGeneration);
+                    System.IO.File.WriteAllText(fileName, json);
+                }
+
+                // 创建 "导入" 按钮，放置在 "导出" 按钮的右侧
+                if (GUI.Button(new Rect(panelXOffset + 120, panelYOffset + panelHeightOffset + 10, 100, 50), "导入"))
+                {
+                    // 导入一个json基因文件
+                    if (System.IO.File.Exists(fileName))
+                    {
+                        string json = System.IO.File.ReadAllText(fileName);
+                        newGeneration = JsonUtility.FromJson<List<CreatureGenome>>(json);
+
+                        // 生成第0代生物时会将json基因文件的数据作为第0批生物的基因
+                        if (generation == 0)
+                        {
+                            StartCoroutine(SpawnCreaturesWithRaidus());
+                        }
+                    }
+                }
                 // labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
                 // GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "FPS: " + fps.ToString("F2"), guiStyle);
             }

@@ -100,13 +100,13 @@ namespace ALUN
     public class CreatureGenome
     {
         public NeuralNetwork neuralNetwork;  // 生物的神经网络
-        public float reward;  // 生物的奖励值
+        public float fitness;  // 生物的奖励值
         public Transform transform;  // 生物的 transform 位置参数
 
         public CreatureGenome(NeuralNetwork network, float reward, Transform transform)
         {
             this.neuralNetwork = network;
-            this.reward = reward;
+            this.fitness = reward;
             this.transform = transform;
         }
     }

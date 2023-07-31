@@ -61,8 +61,8 @@ namespace ALUN
             {
                 RaycastHit hit = Creature.RaycastForObstacle(position, rayDirections[i], creatureParameters.creatureNeuralInfo.obstacleRayDistance);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
                 obstacleDistances[i] = hit.collider != null ? hit.distance : creatureParameters.creatureNeuralInfo.obstacleRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
-
-                Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], hit.collider != null ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色，否则为绿色
+                if (hit.collider != null)
+                    Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], Color.red);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
 
             //食物射线检测结果
@@ -74,7 +74,8 @@ namespace ALUN
                 IGrowable food = Creature.RaycastForFood(position, rayDirections[i], creatureParameters.creatureNeuralInfo.foodRayDistance, out hit);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
                 foodDistances[i] = food != null ? hit.distance : creatureParameters.creatureNeuralInfo.foodRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
                 foodNutrition[i] = food != null ? food.GetNutrition() : 0f;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
-                Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], food != null ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色，否则为绿色
+                if (food != null)
+                    Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], Color.red);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
             float speed = rb.velocity.magnitude / creatureParameters.creatureGameInfo.moveSpeed;
             float rotateSpeed = rb.angularVelocity.magnitude / creatureParameters.creatureGameInfo.rotationSpeed;
@@ -95,7 +96,7 @@ namespace ALUN
             {
                 inputs[i] = foodNutrition[i - 19] / 100f;
             }
-            
+
             //有多少inputs?
             //计算得出inputs数量为27
 

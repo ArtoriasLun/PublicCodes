@@ -18,7 +18,7 @@ MonoBehaviour:
     creatureGameInfo:
       moveSpeed: 50
       rotationSpeed: 1
-      nutritionValue: 10
+      nutritionValue: 50
       nutritionDecayRate: 1
     creatureGameFlag:
       isDied: 0
@@ -29,5 +29,5 @@ MonoBehaviour:
       neuronPerHiddenLayer: 27
       foodRayDistance: 20
       obstacleRayDistance: 20
-      reward: 0
+      fitness: 0
       penalty: 0
