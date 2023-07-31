@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,9 +10,11 @@ namespace ALUN
 {
     public class CharacterSpawner : MonoBehaviour
     {
+        public bool autoLoadGeneration, autoSaveGeneration;
         public CreatureParametersDataset creatureParametersDataset;
         public GameObject creaturePrefab;
         public Transform spawnPoint;
+        public List<Creature> currentCreatures = new List<Creature>();
         public List<CreatureGenome> creatures = new List<CreatureGenome>();
         public List<CreatureGenome> lastGenerationCreatures = new List<CreatureGenome>(); // 新增列表以保存前一代基因信息
         public List<CreatureGenome> newGeneration;
@@ -28,16 +31,21 @@ namespace ALUN
 
         private void Start()
         {
+            currentCreatures = new List<Creature>();
             // nextGenerationSize = populationSize;
             for (int i = 0; i < populationSize; i++)
             {
                 Debug.Log("生成第 " + generation + " 代，第 " + i + " 个生物。" + i % populationSize);
-                SpawnCreature(i);
+                currentCreatures.Add(SpawnCreature(i));
             }
             panelPositionOffset = new Vector2(((-(float)Screen.width / 2f) + (panelSize.x / 2f) + 30f), 30f);
+            if (autoLoadGeneration) LoadGeneration();
         }
-
-        public void SpawnCreature(int index)
+        private void OnApplicationQuit()
+        {
+            if (autoSaveGeneration) SaveGeneration();
+        }
+        public Creature SpawnCreature(int index)
         {
             Vector3 randomPosition = transform.position + (UnityEngine.Random.insideUnitSphere * spawnRadius);
             randomPosition.y = height;
@@ -47,14 +55,15 @@ namespace ALUN
             // 存储基因信息
             NeuralNetworkManager neuralNetworkManager = creatureGO.GetComponent<NeuralNetworkManager>();
             NeuralNetwork neuralNetwork = neuralNetworkManager.neuralNetwork; // 创建新的神经网络
-            CreatureGenome creatureGenome = new CreatureGenome(neuralNetwork, 0, creatureGO.transform); // 初始化基因信息
-            if (creatureGenome.transform.gameObject.activeSelf) creatures.Add(creatureGenome);
-
-            creatureGO.GetComponent<Creature>().onNaturalDied = CreatureNatureDied;
-
+            CreatureGenome creatureGenome = new CreatureGenome(neuralNetwork, 0); // 初始化基因信息
+            creatures.Add(creatureGenome);
+            Creature c = creatureGO.GetComponent<Creature>();
+            c.id = creatureGenome.id;
+            c.onNaturalDied = CreatureNatureDied;
 
             CreatureParameters creatureParameters = GetCreatureParameters(index);
-            creatureGO.GetComponent<NeuralNetworkManager>().Initialize(creatureParameters);
+            c.neuralNetworkManager.Initialize(creatureParameters);
+            return c;
         }
 
         private CreatureParameters GetCreatureParameters(int index)
@@ -78,11 +87,11 @@ namespace ALUN
 
             return creatureParameters;
         }
-
+        bool importNewGeneration = false;
         public void CreatureNatureDied(Creature creature)
         {
             // 修改基因信息
-            CreatureGenome cg = creatures.Find(c => c.transform == creature.transform);
+            CreatureGenome cg = creatures.Find(c => c.id == creature.id);
             cg.neuralNetwork = creature.neuralNetworkManager.neuralNetwork.Clone(); // 复制神经网络
             cg.fitness = creature.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
             deadCreatures++; // 生物死亡时，增加死亡生物的数量
@@ -93,7 +102,8 @@ namespace ALUN
             if (allDied)
             {
                 Debug.Log("所有生物都已死亡，生成下一代。");
-                lastGenerationCreatures = new List<CreatureGenome>(creatures);
+                if (!importNewGeneration) lastGenerationCreatures = new List<CreatureGenome>(creatures);
+                importNewGeneration = false;
                 creatures.Clear();
                 CreateNewGeneration();
             }
@@ -178,7 +188,7 @@ namespace ALUN
 
         private CreatureGenome CloneGenome(CreatureGenome original)
         {
-            CreatureGenome clone = new CreatureGenome(original.neuralNetwork != null ? original.neuralNetwork.Clone() : null, original.fitness, original.transform);
+            CreatureGenome clone = new CreatureGenome(original.neuralNetwork != null ? original.neuralNetwork.Clone() : null, original.fitness);
             return clone;
         }
 
@@ -188,7 +198,7 @@ namespace ALUN
         IEnumerator SpawnCreaturesWithRaidus()
         {
             spawnIndex = 0;
-
+            currentCreatures = new List<Creature>();
             while (spawnIndex < populationSize)
             {
 
@@ -196,7 +206,7 @@ namespace ALUN
 
                 if (distanceToPlayer <= spawnRadius) // spawnRadius是生成生物的有效半径，需要你自己定义
                 {
-                    SpawnCreature(spawnIndex); // SpawnCreature是生成生物的方法，需要你自己定义
+                    currentCreatures.Add(SpawnCreature(spawnIndex));
                     spawnIndex++;
                 }
                 yield return new WaitForSeconds(spawnInterval);
@@ -233,6 +243,49 @@ namespace ALUN
                 }
             }
             return highestReward;
+        }
+        public void SaveGeneration()
+        {
+            // 获取当前的日期和时间，然后将其格式化为 "yyyyMMdd"
+            string date = DateTime.Now.ToString("yyyyMMdd");
+            string fileName = $"Export/lastGeneration-{date}.json";
+
+            List<CreatureGenome> exportGeneration = new List<CreatureGenome>();
+            for (int i = 0; i < lastGenerationCreatures.Count; i++)
+            {
+                exportGeneration.Add(lastGenerationCreatures[i]);
+                exportGeneration[i].id = i;
+            }
+            // 导出最新的基因为json并且保存在一个json文件中
+            string json = JsonConvert.SerializeObject(exportGeneration);
+            System.IO.File.WriteAllText(fileName, json);
+            //Debug保存信息，带上filename
+            Debug.Log("导出最新的基因为json并且保存在json文件中" + fileName);
+
+        }
+        public void LoadGeneration()
+        {
+            // 获取当前的日期和时间，然后将其格式化为 "yyyyMMdd"
+            string date = DateTime.Now.ToString("yyyyMMdd");
+            string fileName = $"Export/lastGeneration-{date}.json";
+
+            // 读取json文件中的基因信息
+            string json = System.IO.File.ReadAllText(fileName);
+            List<CreatureGenome> importGeneration = JsonConvert.DeserializeObject<List<CreatureGenome>>(json);
+            // 将读取到的基因信息赋值给currentCreatures列表中的每一个生物
+            for (int i = 0; i < importGeneration.Count; i++)
+            {
+                //判断如果currentCreatures数量小于导入的基因数量，就不再进行导入
+                if (i < currentCreatures.Count)
+                {
+                    currentCreatures[i].id = importGeneration[i].id;
+                    currentCreatures[i].neuralNetworkManager.neuralNetwork = importGeneration[i].neuralNetwork;
+                    currentCreatures[i].creatureParameters.creatureNeuralInfo.fitness = importGeneration[i].fitness;
+                }
+                CreatureGenome.nextID = importGeneration[i].id + 1;
+                lastGenerationCreatures = new List<CreatureGenome>(importGeneration);
+                importNewGeneration = true;
+            }
         }
         private GUIStyle guiStyle = new GUIStyle();
         public float gameSpeed = 1f;
@@ -323,35 +376,14 @@ namespace ALUN
                 GUI.Label(new Rect(textX, textY, 100, labelHeight), "生物进化面板", guiStyle);
 
 
-                // 获取当前的日期和时间，然后将其格式化为 "yyyyMMdd"
-                string date = DateTime.Now.ToString("yyyyMMdd");
-                string fileName = $"newGeneration-{date}.json";
-                // 创建 "导出" 按钮
-                if (GUI.Button(new Rect(panelXOffset + 10, panelYOffset + panelHeightOffset + 10, 100, 50), "导出"))
-                {
-                    // 导出最新的基因为json并且保存在一个json文件中
-                    string json = JsonUtility.ToJson(newGeneration);
-                    System.IO.File.WriteAllText(fileName, json);
-                }
 
-                // 创建 "导入" 按钮，放置在 "导出" 按钮的右侧
-                if (GUI.Button(new Rect(panelXOffset + 120, panelYOffset + panelHeightOffset + 10, 100, 50), "导入"))
-                {
-                    // 导入一个json基因文件
-                    if (System.IO.File.Exists(fileName))
-                    {
-                        string json = System.IO.File.ReadAllText(fileName);
-                        newGeneration = JsonUtility.FromJson<List<CreatureGenome>>(json);
+                // 创建 "保存基因" 按钮
+                if (GUI.Button(new Rect(panelXOffset + 10, panelYOffset + panelHeightOffset + 10, 100, 50), "保存基因"))
+                    SaveGeneration();
 
-                        // 生成第0代生物时会将json基因文件的数据作为第0批生物的基因
-                        if (generation == 0)
-                        {
-                            StartCoroutine(SpawnCreaturesWithRaidus());
-                        }
-                    }
-                }
-                // labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
-                // GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "FPS: " + fps.ToString("F2"), guiStyle);
+                //创建"读取基因"按钮,并用for循环修改currentCreatures列表中的每一个生物的基因和id
+                if (GUI.Button(new Rect(panelXOffset + 120, panelYOffset + panelHeightOffset + 10, 100, 50), "读取基因"))
+                    LoadGeneration();
             }
 
             // DrawAverageRewardChart();

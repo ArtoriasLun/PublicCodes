@@ -23,7 +23,7 @@ MonoBehaviour:
     creatureGameFlag:
       isDied: 0
     creatureNeuralInfo:
-      inputCount: 27
+      inputCount: 25
       outputCount: 4
       hiddenLayerCount: 1
       neuronPerHiddenLayer: 27

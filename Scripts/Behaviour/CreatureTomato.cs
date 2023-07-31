@@ -67,6 +67,7 @@ namespace ALUN
         private void PenaltyForCollision()
         {
             creatureParameters.creatureNeuralInfo.fitness -= 1f * Time.timeScale;
+            creatureParameters.creatureGameInfo.nutritionValue -= 1f * Time.timeScale;
         }
 
         // 当生物自由行走时，给予奖励

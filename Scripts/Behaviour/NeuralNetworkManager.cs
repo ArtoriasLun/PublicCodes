@@ -62,7 +62,7 @@ namespace ALUN
                 RaycastHit hit = Creature.RaycastForObstacle(position, rayDirections[i], creatureParameters.creatureNeuralInfo.obstacleRayDistance);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
                 obstacleDistances[i] = hit.collider != null ? hit.distance : creatureParameters.creatureNeuralInfo.obstacleRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
                 if (hit.collider != null)
-                    Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], Color.red);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
+                    Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], hit.distance <= 1 ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
 
             //食物射线检测结果
@@ -75,30 +75,30 @@ namespace ALUN
                 foodDistances[i] = food != null ? hit.distance : creatureParameters.creatureNeuralInfo.foodRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
                 foodNutrition[i] = food != null ? food.GetNutrition() : 0f;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
                 if (food != null)
-                    Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], Color.red);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
+                    Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], hit.distance <= 1 ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
             float speed = rb.velocity.magnitude / creatureParameters.creatureGameInfo.moveSpeed;
             float rotateSpeed = rb.angularVelocity.magnitude / creatureParameters.creatureGameInfo.rotationSpeed;
             float velocityAngle = Vector3.Angle(rb.velocity, Vector3.right);
             inputs[0] = speed;
-            inputs[1] = rotateSpeed;
-            inputs[2] = velocityAngle / 180f;
-            //将下面3个for的i值都增加1，因为前面已经有3个inputs了
-            for (int i = 3; i < 11; i++)
+            // inputs[1] = rotateSpeed;
+            // inputs[2] = velocityAngle / 180f;
+
+            for (int i = 1; i < 9; i++)
             {
-                inputs[i] = obstacleDistances[i - 3] / creatureParameters.creatureNeuralInfo.obstacleRayDistance;
+                inputs[i] = obstacleDistances[i - 1] / creatureParameters.creatureNeuralInfo.obstacleRayDistance;
             }
-            for (int i = 11; i < 19; i++)
+            for (int i = 9; i < 17; i++)
             {
-                inputs[i] = foodDistances[i - 11] / creatureParameters.creatureNeuralInfo.foodRayDistance;
+                inputs[i] = foodDistances[i - 9] / creatureParameters.creatureNeuralInfo.foodRayDistance;
             }
-            for (int i = 19; i < 27; i++)
+            for (int i = 17; i < 25; i++)
             {
-                inputs[i] = foodNutrition[i - 19] / 100f;
+                inputs[i] = foodNutrition[i - 17] / 100f;
             }
 
             //有多少inputs?
-            //计算得出inputs数量为27
+            //计算得出inputs数量为25
 
             return inputs;
         }
@@ -130,7 +130,7 @@ namespace ALUN
             creatureTomato.Move(moveDirection);
 
             // 旋转生物
-            creatureTomato.Rotate(rotateY);
+            // creatureTomato.Rotate(rotateY);
         }
     }
     [System.Serializable]

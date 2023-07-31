@@ -8,6 +8,7 @@ namespace ALUN
 {
     public abstract class Creature : MonoBehaviour
     {
+        public int id;
         public NeuralNetworkManager neuralNetworkManager;
         public CreatureParametersDataset creatureParametersDataset;
         public CreatureParameters creatureParameters;
@@ -99,15 +100,16 @@ namespace ALUN
     [System.Serializable]
     public class CreatureGenome
     {
+        public static int nextID = 0;  // 静态字段，用于生成唯一识别号
+        public int id;  // 每个实例的唯一识别号
         public NeuralNetwork neuralNetwork;  // 生物的神经网络
         public float fitness;  // 生物的奖励值
-        public Transform transform;  // 生物的 transform 位置参数
-
-        public CreatureGenome(NeuralNetwork network, float reward, Transform transform)
+        public CreatureGenome(NeuralNetwork network, float reward)
         {
             this.neuralNetwork = network;
             this.fitness = reward;
-            this.transform = transform;
+            id=nextID;
+            nextID++;
         }
     }
 
