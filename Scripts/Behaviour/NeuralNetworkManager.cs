@@ -57,10 +57,15 @@ namespace ALUN
 
             //障碍物射线检测结果
             float[] obstacleDistances = new float[rayDirections.Length];  // 初始化一个障碍物数组来存储每个方向的射线距离
+            //障碍物射线反射角度结果
+            float[] obstacleAngles = new float[rayDirections.Length];  // 初始化一个障碍物数组来存储每个方向的射线距离
             for (int i = 0; i < rayDirections.Length; i++)
             {
                 RaycastHit hit = Creature.RaycastForObstacle(position, rayDirections[i], creatureParameters.creatureNeuralInfo.obstacleRayDistance);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
                 obstacleDistances[i] = hit.collider != null ? hit.distance : creatureParameters.creatureNeuralInfo.obstacleRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
+                // 计算射线的仰俯角倾斜并保存到obstacleAngles数组
+                float angle = Mathf.Acos(Vector3.Dot(rayDirections[i], Vector3.up)) * Mathf.Rad2Deg;
+                obstacleAngles[i] = angle;
                 if (hit.collider != null)
                     Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], hit.distance <= 1 ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
@@ -78,8 +83,8 @@ namespace ALUN
                     Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], hit.distance <= 1 ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
             float speed = rb.velocity.magnitude / creatureParameters.creatureGameInfo.moveSpeed;
-            float rotateSpeed = rb.angularVelocity.magnitude / creatureParameters.creatureGameInfo.rotationSpeed;
-            float velocityAngle = Vector3.Angle(rb.velocity, Vector3.right);
+            // float rotateSpeed = rb.angularVelocity.magnitude / creatureParameters.creatureGameInfo.rotationSpeed;
+            // float velocityAngle = Vector3.Angle(rb.velocity, Vector3.right);
             inputs[0] = speed;
             // inputs[1] = rotateSpeed;
             // inputs[2] = velocityAngle / 180f;
@@ -96,9 +101,16 @@ namespace ALUN
             {
                 inputs[i] = foodNutrition[i - 17] / 100f;
             }
-
+            inputs[25] = rb.velocity.x / creatureParameters.creatureGameInfo.moveSpeed;
+            inputs[26] = rb.velocity.y / creatureParameters.creatureGameInfo.moveSpeed;
+            inputs[27] = rb.velocity.z / creatureParameters.creatureGameInfo.moveSpeed;
+            //新增9个inputs在for循环中
+            for (int i = 28; i < 37; i++)
+            {
+                inputs[i] = obstacleAngles[i - 28] / 180f;
+            }
             //有多少inputs?
-            //计算得出inputs数量为25
+            //计算得出inputs数量为37
 
             return inputs;
         }
@@ -116,9 +128,11 @@ namespace ALUN
 
         private void ControlCreature(float[] outputs)
         {
+            float x = outputs[0] - 0.5f;
+            float y = outputs[1] - 0.5f;
             // 解析神经网络的输出
-            float moveX = outputs[0] * 300f;
-            float moveZ = outputs[1] * 300f;
+            float moveX = x * 300f;
+            float moveZ = y * 300f;
             float rotateY = outputs[2] * 100f;  // 新增，代表旋转的方向
             float moveY = Mathf.Abs(outputs[3]) * 300f;  // 新增，代表上下移动
             // 创建移动方向向量
@@ -131,6 +145,16 @@ namespace ALUN
 
             // 旋转生物
             // creatureTomato.Rotate(rotateY);
+
+            // 紫色射线，显示moveDirection
+            Vector3 moveDirectionXZ = new Vector3(moveDirection.x, 0, moveDirection.z);
+            Debug.DrawRay(transform.position, moveDirectionXZ.normalized * Mathf.Max(1, moveDirectionXZ.magnitude), Color.magenta);
+
+            // 粉色射线，显示当前刚体velocity的方向
+            Vector3 velocityXZ = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+            Debug.DrawRay(transform.position, velocityXZ.normalized * Mathf.Max(1, velocityXZ.magnitude), Color.blue);
+
+
         }
     }
     [System.Serializable]

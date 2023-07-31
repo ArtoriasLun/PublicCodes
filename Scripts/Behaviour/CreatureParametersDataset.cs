@@ -52,7 +52,6 @@ namespace ALUN
             clone.creatureNeuralInfo.obstacleRayDistance = creatureNeuralInfo.obstacleRayDistance;
             clone.creatureNeuralInfo.foodRayDistance = creatureNeuralInfo.foodRayDistance;
             clone.creatureNeuralInfo.fitness = creatureNeuralInfo.fitness;
-            clone.creatureNeuralInfo.penalty = creatureNeuralInfo.penalty;
             return clone;
         }
 
@@ -79,9 +78,6 @@ namespace ALUN
         [InfoBox("奖励值")]
         public float fitness;
 
-        [InfoBox("惩罚值")]
-        public float penalty;
-
         private void Reset()
         {
             this.inputCount = 8;
@@ -91,7 +87,6 @@ namespace ALUN
             this.foodRayDistance = 30f;
             this.obstacleRayDistance = 10f;
             this.fitness = 0f;
-            this.penalty = 0f;
         }
 
         public CreatureNeuralInfo Clone()
@@ -104,7 +99,6 @@ namespace ALUN
             clone.foodRayDistance = foodRayDistance;
             clone.obstacleRayDistance = obstacleRayDistance;
             clone.fitness = fitness;
-            clone.penalty = penalty;
             return clone;
         }
     }

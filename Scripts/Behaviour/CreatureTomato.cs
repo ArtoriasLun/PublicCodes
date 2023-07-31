@@ -56,12 +56,10 @@ namespace ALUN
                 //测试raycast是否真的被创建
                 if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested)
                 {
+                    Debug.Log("Found food");
                     FitnessForEating(plant.HarvestPlant());
                 }
             }
-
-
-
         }
         // 当生物撞到障碍物时，给予惩罚
         private void PenaltyForCollision()
