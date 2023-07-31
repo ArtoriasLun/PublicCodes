@@ -66,7 +66,7 @@ namespace ALUN
 
             if (creatures.Count > 0)
             {
-                creatureParameters.creatureNeuralInfo.fitness = creatures[index].reward;
+                creatureParameters.creatureNeuralInfo.fitness = creatures[index].fitness;
             }
 
             NeuralNetworkManager neuralNetworkManager = creaturePrefab.GetComponent<NeuralNetworkManager>();
@@ -84,11 +84,11 @@ namespace ALUN
             // 修改基因信息
             CreatureGenome cg = creatures.Find(c => c.transform == creature.transform);
             cg.neuralNetwork = creature.neuralNetworkManager.neuralNetwork.Clone(); // 复制神经网络
-            cg.reward = creature.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
+            cg.fitness = creature.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
             deadCreatures++; // 生物死亡时，增加死亡生物的数量
 
             bool allDied = deadCreatures == creatures.Count; // 检查所有生物是否都已经死亡
-            Debug.Log("生物自然死亡，奖励值为 " + cg.reward + " is All Died " + allDied + "creatures.Count " + creatures.Count);
+            Debug.Log("生物自然死亡，奖励值为 " + cg.fitness + " is All Died " + allDied + "creatures.Count " + creatures.Count);
             // 检查是否所有的生物都已经死亡
             if (allDied)
             {
@@ -101,15 +101,16 @@ namespace ALUN
         private void CreateNewGeneration()
         {
             // 计算当前一代的reward平均值，并添加到generationRewards列表中
-            float averageReward = lastGenerationCreatures.Count > 0 ? lastGenerationCreatures.Average(lastGenerationCreatures => lastGenerationCreatures.reward) : 0f;
-            generationRewards.Add(averageReward);
+            float averageFitness = lastGenerationCreatures.Count > 0 ? lastGenerationCreatures.Average(lastGenerationCreatures => lastGenerationCreatures.fitness) : 0f;
+            generationFitness.Add(averageFitness);
             deadCreatures = 0;
             generation++;
-
             newGeneration = new List<CreatureGenome>();
 
+            
+
             // 使用轮盘赌选择策略生成新的生物
-            float totalReward = lastGenerationCreatures.Sum(creature => creature.reward);
+            float totalReward = lastGenerationCreatures.Sum(creature => creature.fitness);
             int numGenesToAdd = Mathf.Max(populationSize - lastGenerationCreatures.Count, 0);
 
             if (totalReward <= 0f || numGenesToAdd == 0)
@@ -146,7 +147,7 @@ namespace ALUN
                     offspring.neuralNetwork.Crossover(parent2.neuralNetwork);
 
                     // 对交叉后的基因组进行变异
-                    offspring.neuralNetwork.Mutate(0.1f - 0.05f * (offspring.reward / totalReward));
+                    offspring.neuralNetwork.Mutate(0.1f - 0.05f * (offspring.fitness / totalReward));
 
                     // 将新的基因组添加到新一代的基因组列表中
                     newGeneration.Add(offspring);
@@ -167,7 +168,7 @@ namespace ALUN
             // 清零reward
             foreach (CreatureGenome genome in newGeneration)
             {
-                genome.reward = 0;
+                genome.fitness = 0;
             }
 
             StartCoroutine(SpawnCreaturesWithRaidus());
@@ -177,7 +178,7 @@ namespace ALUN
 
         private CreatureGenome CloneGenome(CreatureGenome original)
         {
-            CreatureGenome clone = new CreatureGenome(original.neuralNetwork != null ? original.neuralNetwork.Clone() : null, original.reward, original.transform);
+            CreatureGenome clone = new CreatureGenome(original.neuralNetwork != null ? original.neuralNetwork.Clone() : null, original.fitness, original.transform);
             return clone;
         }
 
@@ -226,9 +227,9 @@ namespace ALUN
             float highestReward = 0f;
             foreach (CreatureGenome creature in creatures)
             {
-                if (creature.reward > highestReward)
+                if (creature.fitness > highestReward)
                 {
-                    highestReward = creature.reward;
+                    highestReward = creature.fitness;
                 }
             }
             return highestReward;
@@ -238,7 +239,7 @@ namespace ALUN
         public Color panelBackgroundColor = new Color(0f, 0f, 0f, 0.2f); // 默认为透明度为0.2的黑色背景色
         public Vector2 panelPositionOffset = new Vector2(0, 0); // 面板的位置偏移量，默认为零
         public Vector2 panelSize = new Vector2(300f, 200f); // 面板的初始大小
-        private List<float> generationRewards = new List<float>();
+        private List<float> generationFitness = new List<float>();
         private void OnGUI()
         {
             Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position);
@@ -335,12 +336,12 @@ namespace ALUN
 
         private void DrawAverageRewardChart()
         {
-            if (generationRewards.Count == 0) return;
+            if (generationFitness.Count == 0) return;
             ASCIIList = new List<float>();
 
             // 找到generationRewards列表中的最大绝对值
             float maxAbsReward = float.MinValue;
-            foreach (float reward in generationRewards)
+            foreach (float reward in generationFitness)
             {
                 if (Mathf.Abs(reward) > maxAbsReward)
                 {
@@ -349,10 +350,10 @@ namespace ALUN
             }
 
             // 对列表中的每一个数进行等比例的转化
-            for (int i = 0; i < generationRewards.Count; i++)
+            for (int i = 0; i < generationFitness.Count; i++)
             {
                 // 如果最大绝对值是0，直接把值设为0以避免除以0的情况
-                float currentHeight = maxAbsReward != 0 ? (generationRewards[i] / maxAbsReward) * 10 : 0;
+                float currentHeight = maxAbsReward != 0 ? (generationFitness[i] / maxAbsReward) * 10 : 0;
                 if (i < ASCIIList.Count)
                 {
                     ASCIIList[i] = currentHeight;
