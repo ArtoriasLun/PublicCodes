@@ -135,33 +135,32 @@ namespace ALUN
             }
             else
             {
-                int randomClone = UnityEngine.Random.Range(0, 2);
+                AverageFitnessSelectionAndCrossoverMutation(totalReward);
+                // // 在这里添加交叉和变异的代码
+                // for (int i = 0; i < numGenesToAdd; i++)
+                // {
+                //     // 随机选择第一个生物
+                //     CreatureGenome parent1 = lastGenerationCreatures[UnityEngine.Random.Range(0, lastGenerationCreatures.Count)];
 
-                // 在这里添加交叉和变异的代码
-                for (int i = 0; i < numGenesToAdd; i++)
-                {
-                    // 随机选择第一个生物
-                    CreatureGenome parent1 = lastGenerationCreatures[UnityEngine.Random.Range(0, lastGenerationCreatures.Count)];
+                //     // 创建一个新的列表，包含除了 parent1 之外的所有生物
+                //     List<CreatureGenome> otherCreatures = new List<CreatureGenome>(lastGenerationCreatures);
+                //     otherCreatures.Remove(parent1);
 
-                    // 创建一个新的列表，包含除了 parent1 之外的所有生物
-                    List<CreatureGenome> otherCreatures = new List<CreatureGenome>(lastGenerationCreatures);
-                    otherCreatures.Remove(parent1);
+                //     // 从新的列表中随机选择第二个生物
+                //     CreatureGenome parent2 = otherCreatures[UnityEngine.Random.Range(0, otherCreatures.Count)];
 
-                    // 从新的列表中随机选择第二个生物
-                    CreatureGenome parent2 = otherCreatures[UnityEngine.Random.Range(0, otherCreatures.Count)];
+                //     // 克隆其中一个生物的基因组
+                //     CreatureGenome offspring = CloneGenome(parent1);
 
-                    // 克隆其中一个生物的基因组
-                    CreatureGenome offspring = CloneGenome(parent1);
+                //     // 对克隆得到的基因组进行交叉
+                //     offspring.neuralNetwork.Crossover(parent2.neuralNetwork);
 
-                    // 对克隆得到的基因组进行交叉
-                    offspring.neuralNetwork.Crossover(parent2.neuralNetwork);
+                //     // 对交叉后的基因组进行变异
+                //     offspring.neuralNetwork.Mutate(0.1f - 0.05f * (offspring.fitness / totalReward));
 
-                    // 对交叉后的基因组进行变异
-                    offspring.neuralNetwork.Mutate(0.1f - 0.05f * (offspring.fitness / totalReward));
-
-                    // 将新的基因组添加到新一代的基因组列表中
-                    newGeneration.Add(offspring);
-                }
+                //     // 将新的基因组添加到新一代的基因组列表中
+                //     newGeneration.Add(offspring);
+                // }
             }
 
             // 补充前一代的剩余基因
@@ -183,7 +182,75 @@ namespace ALUN
 
             StartCoroutine(SpawnCreaturesWithRaidus());
         }
+        /// <summary>
+        /// 平均适应度淘汰选择和交叉变异
+        /// </summary>
+        /// <param name="totalReward"></param>
+        private void AverageFitnessSelectionAndCrossoverMutation(float totalReward)
+        {
+            float averageFitness = lastGenerationCreatures.Average(creature => creature.fitness);
+            List<CreatureGenome> aboveAverageCreatures = lastGenerationCreatures.Where(creature => creature.fitness >= averageFitness).ToList();
 
+            int numGenesToAdd = lastGenerationCreatures.Count - aboveAverageCreatures.Count;
+
+            for (int i = 0; i < numGenesToAdd; i++)
+            {
+                CreatureGenome parent1 = aboveAverageCreatures[UnityEngine.Random.Range(0, aboveAverageCreatures.Count)];
+                // 创建一个新的列表，包含除了 parent1 之外的所有生物
+                List<CreatureGenome> otherCreatures = new List<CreatureGenome>(lastGenerationCreatures);
+                otherCreatures.Remove(parent1);
+
+                // 从新的列表中随机选择第二个生物
+                CreatureGenome parent2 = otherCreatures[UnityEngine.Random.Range(0, aboveAverageCreatures.Count)];
+
+                CreatureGenome child = CloneGenome(parent1);
+                child.neuralNetwork.Crossover(parent2.neuralNetwork);
+                child.neuralNetwork.Mutate(0.1f - 0.05f * (child.fitness / totalReward));
+
+                aboveAverageCreatures.Add(child);
+            }
+
+            newGeneration = aboveAverageCreatures;
+        }
+        /// <summary>
+        /// 轮盘赌选择和交叉变异
+        /// </summary>
+        /// <param name="totalReward"></param>
+        private void RouletteWheelSelectionAndCrossoverMutation(float totalReward)
+        {
+            float totalFitness = lastGenerationCreatures.Sum(creature => creature.fitness);
+            List<CreatureGenome> _newGeneration = new List<CreatureGenome>();
+
+            for (int i = 0; i < lastGenerationCreatures.Count; i++)
+            {
+                float randomPoint = UnityEngine.Random.Range(0, totalFitness);
+                float cumulativeFitness = 0;
+
+                foreach (CreatureGenome creature in lastGenerationCreatures)
+                {
+                    cumulativeFitness += creature.fitness;
+                    if (cumulativeFitness >= randomPoint)
+                    {
+                        CreatureGenome parent1 = creature;
+                        // 创建一个新的列表，包含除了 parent1 之外的所有生物
+                        List<CreatureGenome> otherCreatures = new List<CreatureGenome>(lastGenerationCreatures);
+                        otherCreatures.Remove(parent1);
+
+                        // 从新的列表中随机选择第二个生物
+                        CreatureGenome parent2 = otherCreatures[UnityEngine.Random.Range(0, otherCreatures.Count)];
+
+                        CreatureGenome child = CloneGenome(parent1);
+                        child.neuralNetwork.Crossover(parent2.neuralNetwork);
+                        child.neuralNetwork.Mutate(0.1f - 0.05f * (child.fitness / totalReward));
+
+                        _newGeneration.Add(child);
+                        break;
+                    }
+                }
+            }
+
+            newGeneration = _newGeneration;
+        }
 
 
         private CreatureGenome CloneGenome(CreatureGenome original)
