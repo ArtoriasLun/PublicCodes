@@ -25,9 +25,8 @@ namespace ALUN
         public abstract void DetectAndDrawRays();
         public virtual void ResetCreature()
         {
-            //TODO 这里要改成重置，而不是继承，继承应该在其他地方   
             creatureParameters.creatureGameInfo = creatureParametersDataset.GetParameterById(creatureParameters.id).creatureGameInfo;
-            creatureParameters.creatureNeuralInfo.fitness = neuralNetworkManager.creatureParameters.creatureNeuralInfo.fitness;
+            creatureParameters.creatureNeuralInfo.fitness = 0;
             GetComponentInChildren<Animator>().speed = 1;
             creatureParameters.creatureGameFlag.isDied = false;
         }
@@ -39,8 +38,8 @@ namespace ALUN
             foreach (var item in fade)
                 item.Play(delay, 1);
             yield return new WaitForSeconds(delay);
-            ResetCreature(); // 重置 CreatureGameInfo
             onNaturalDied?.Invoke(this);
+            ResetCreature(); // 重置 CreatureGameInfo
             ObjectPoolerManager.ReleaseInstance(gameObject);
         }
 
@@ -80,7 +79,7 @@ namespace ALUN
 
             return hit;
         }
-        public static IGrowable RaycastForFood(Vector3 position, Vector3 direction, float distance,out RaycastHit hit)
+        public static IGrowable RaycastForFood(Vector3 position, Vector3 direction, float distance, out RaycastHit hit)
         {
             // LayerMask for Interactive layer
             int foodLayerMask = 1 << LayerMask.NameToLayer("Interactive");

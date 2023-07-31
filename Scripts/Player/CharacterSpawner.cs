@@ -79,12 +79,12 @@ namespace ALUN
             return creatureParameters;
         }
 
-        public void CreatureNatureDied(Creature creatureGenome)
+        public void CreatureNatureDied(Creature creature)
         {
             // 修改基因信息
-            CreatureGenome cg = creatures.Find(c => c.transform == creatureGenome.transform);
-            cg.neuralNetwork = creatureGenome.neuralNetworkManager.neuralNetwork.Clone(); // 复制神经网络
-            cg.reward = creatureGenome.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
+            CreatureGenome cg = creatures.Find(c => c.transform == creature.transform);
+            cg.neuralNetwork = creature.neuralNetworkManager.neuralNetwork.Clone(); // 复制神经网络
+            cg.reward = creature.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
             deadCreatures++; // 生物死亡时，增加死亡生物的数量
 
             bool allDied = deadCreatures == creatures.Count; // 检查所有生物是否都已经死亡
@@ -247,6 +247,7 @@ namespace ALUN
             // Check if the Transform is inside the camera's viewport
             if (viewportPos.x >= 0 && viewportPos.x <= 1 && viewportPos.y >= 0 && viewportPos.y <= 1)
             {
+                guiStyle.normal.textColor = Color.white;
                 float panelX = screenPos.x - panelSize.x / 2; // Subtract half the width
                 float panelY = Screen.height - screenPos.y - panelSize.y; // Subtract half the height
 

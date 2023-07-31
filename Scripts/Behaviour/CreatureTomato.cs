@@ -45,6 +45,7 @@ namespace ALUN
             for (int i = 0; i < rayDirections.Length; i++)
             {
                 RaycastHit obstacleHit = RaycastForObstacle(position, rayDirections[i], 1f);
+
                 if (obstacleHit.collider != null)
                     PenaltyForCollision();
                 else
@@ -52,6 +53,7 @@ namespace ALUN
 
                 RaycastHit foodHit;
                 IGrowable plant = RaycastForFood(position, rayDirections[i], 1f, out foodHit);
+                //测试raycast是否真的被创建
                 if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested)
                 {
                     FitnessForEating(plant.HarvestPlant());
@@ -67,16 +69,17 @@ namespace ALUN
             creatureParameters.creatureNeuralInfo.fitness -= 1f * Time.timeScale;
         }
 
-        // 当生物成功避开障碍物时，给予奖励
+        // 当生物自由行走时，给予奖励
         private void FitnessForAvoidance()
         {
             creatureParameters.creatureNeuralInfo.fitness += 0.1f * Time.timeScale;
         }
 
         //当生物成功吃到食物时，给予奖励
-        private void FitnessForEating(float fitness = 10f)
+        private void FitnessForEating(float nutrition = 10f)
         {
-            creatureParameters.creatureNeuralInfo.fitness += fitness * Time.timeScale;
+            creatureParameters.creatureGameInfo.nutritionValue += nutrition;
+            creatureParameters.creatureNeuralInfo.fitness += nutrition;
         }
         private void DrawRay(Vector3 direction, bool raycastHit)
         {
