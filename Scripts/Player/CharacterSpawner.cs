@@ -14,7 +14,7 @@ namespace ALUN
         public Transform spawnPoint;
         public List<CreatureGenome> creatures = new List<CreatureGenome>();
         public List<CreatureGenome> lastGenerationCreatures = new List<CreatureGenome>(); // 新增列表以保存前一代基因信息
-
+        public List<CreatureGenome> newGeneration;
         private int deadCreatures = 0; // 用来记录死亡生物的数量
         public int populationSize = 10;
         // int nextGenerationSize = 10; // 用于判断生成下一代的数量
@@ -72,7 +72,7 @@ namespace ALUN
             NeuralNetworkManager neuralNetworkManager = creaturePrefab.GetComponent<NeuralNetworkManager>();
             if (neuralNetworkManager != null)
             {
-                NeuralNetwork neuralNetwork = creatures[index].neuralNetwork;
+                NeuralNetwork neuralNetwork = newGeneration[index].neuralNetwork;
                 neuralNetworkManager.neuralNetwork = neuralNetwork != null ? neuralNetwork.Clone() : null;
             }
 
@@ -106,7 +106,7 @@ namespace ALUN
             deadCreatures = 0;
             generation++;
 
-            List<CreatureGenome> newGeneration = new List<CreatureGenome>();
+            newGeneration = new List<CreatureGenome>();
 
             // 使用轮盘赌选择策略生成新的生物
             float totalReward = lastGenerationCreatures.Sum(creature => creature.reward);
