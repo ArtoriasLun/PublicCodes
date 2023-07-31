@@ -18,7 +18,7 @@ MonoBehaviour:
     creatureGameInfo:
       moveSpeed: 50
       rotationSpeed: 1
-      nutritionValue: 50
+      nutritionValue: 200
       nutritionDecayRate: 1
     creatureGameFlag:
       isDied: 0

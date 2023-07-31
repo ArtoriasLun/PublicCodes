@@ -244,6 +244,16 @@ namespace ALUN
             }
             return highestReward;
         }
+        private float GetAverageReward(List<CreatureGenome> targetGenomes)
+        {
+            float totalReward = 0f;
+            foreach (CreatureGenome creature in targetGenomes)
+            {
+                totalReward += creature.fitness;
+            }
+            return creatures.Count > 0 ? totalReward / creatures.Count : 0f;
+        }
+
         public void SaveGeneration()
         {
             // 获取当前的日期和时间，然后将其格式化为 "yyyyMMdd"
@@ -321,7 +331,7 @@ namespace ALUN
                 labelY += labelMargin;
 
                 labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
-                GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "最高奖励: " + GetHighestReward().ToString(), guiStyle);
+                GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "平均奖励: " + GetAverageReward(lastGenerationCreatures).ToString(), guiStyle);
 
 
                 GUIStyle buttonStyleP = new GUIStyle(GUI.skin.button);
