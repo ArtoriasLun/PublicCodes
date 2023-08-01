@@ -80,6 +80,18 @@ namespace ALUN
 
             return hit;
         }
+        public static RaycastHit RaycastForCreature(Vector3 position, Vector3 direction, float distance)
+        {
+            // LayerMask for Creature layer
+            int creatureLayerMask = 1 << LayerMask.NameToLayer("Creature");
+            RaycastHit hit;
+            if (Physics.Raycast(position, direction, out hit, distance, creatureLayerMask))
+            {
+                return hit;
+            }
+
+            return hit;
+        }
         public static IGrowable RaycastForFood(Vector3 position, Vector3 direction, float distance, out RaycastHit hit)
         {
             // LayerMask for Interactive layer

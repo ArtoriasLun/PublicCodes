@@ -47,16 +47,25 @@ namespace ALUN
                 RaycastHit obstacleHit = RaycastForObstacle(position, rayDirections[i], 1f);
 
                 if (obstacleHit.collider != null)
-                    PenaltyForCollision();
+                {
+                    // 计算障碍物的角度
+                    float angle = Vector3.Angle(obstacleHit.normal, Vector3.up);
+                    // 检查障碍物是否垂直，或者角度是否大于40度
+                    if (angle >= 30)
+                    {
+                        PenaltyForCollision();
+                    }
+                }
                 else
+                {
                     FitnessForAvoidance();
+                }
 
                 RaycastHit foodHit;
                 IGrowable plant = RaycastForFood(position, rayDirections[i], 1f, out foodHit);
                 //测试raycast是否真的被创建
-                if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested)
+                if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested && plant.GetCurrentStage() > 0)
                 {
-                    Debug.Log("Found food");
                     FitnessForEating(plant.HarvestPlant());
                 }
             }

@@ -11,6 +11,13 @@ namespace ALUN
     public class CharacterSpawner : MonoBehaviour
     {
         public bool autoLoadGeneration, autoSaveGeneration;
+        //选择策略
+        public enum SelectionStrategy
+        {
+            AverageFitness,
+            RouletteWheel
+        }
+        public SelectionStrategy selectionStrategy = SelectionStrategy.AverageFitness;
         public CreatureParametersDataset creatureParametersDataset;
         public GameObject creaturePrefab;
         public Transform spawnPoint;
@@ -18,28 +25,25 @@ namespace ALUN
         public List<CreatureGenome> creatures = new List<CreatureGenome>();
         public List<CreatureGenome> lastGenerationCreatures = new List<CreatureGenome>(); // 新增列表以保存前一代基因信息
         public List<CreatureGenome> newGeneration;
-        private int deadCreatures = 0; // 用来记录死亡生物的数量
         public int populationSize = 10;
         // int nextGenerationSize = 10; // 用于判断生成下一代的数量
         [SerializeField] private int generation = 1;
         private float spawnInterval = 0.5f;
-        private float deltaTime = 0.0f;
-        private int frames = 0;
         [SerializeField] private float height = 100f;
         [SerializeField] private float spawnRadius = 50f;
-        [SerializeField] private int fpsLimit = 30;
+        void Awake()
+        {
+            blackTexture = MakeTexture(128, 128,5, new Color(0f, 0f, 0f, 0.2f));
 
+        }
         private void Start()
         {
             currentCreatures = new List<Creature>();
-            // nextGenerationSize = populationSize;
-            for (int i = 0; i < populationSize; i++)
-            {
-                Debug.Log("生成第 " + generation + " 代，第 " + i + " 个生物。" + i % populationSize);
-                currentCreatures.Add(SpawnCreature(i));
-            }
             panelPositionOffset = new Vector2(((-(float)Screen.width / 2f) + (panelSize.x / 2f) + 30f), 30f);
             if (autoLoadGeneration) LoadGeneration();
+            CreatureNatureDied(null);
+
+
         }
         private void OnApplicationQuit()
         {
@@ -90,18 +94,26 @@ namespace ALUN
         bool importNewGeneration = false;
         public void CreatureNatureDied(Creature creature)
         {
-            // 修改基因信息
-            CreatureGenome cg = creatures.Find(c => c.id == creature.id);
-            cg.neuralNetwork = creature.neuralNetworkManager.neuralNetwork.Clone(); // 复制神经网络
-            cg.fitness = creature.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
-            deadCreatures++; // 生物死亡时，增加死亡生物的数量
+            //删除currentCreatures列表中的生物
+            if (currentCreatures.Count > 0 && currentCreatures.Contains(creature))
+                currentCreatures.Remove(creature);
 
-            bool allDied = deadCreatures == creatures.Count; // 检查所有生物是否都已经死亡
-            Debug.Log("生物自然死亡，奖励值为 " + cg.fitness + " is All Died " + allDied + "creatures.Count " + creatures.Count);
+            // 修改基因信息
+            if (creature != null)
+            {
+                CreatureGenome cg = creatures.Find(c => c.id == creature.id);
+                if (cg != null)
+                {
+                    cg.neuralNetwork = creature.neuralNetworkManager.neuralNetwork.Clone(); // 复制神经网络
+                    cg.fitness = creature.creatureParameters.creatureNeuralInfo.fitness; // 保存奖励值
+                    Debug.Log("生物自然死亡，奖励值为 " + cg.fitness + "creatures.Count " + currentCreatures.Count);
+                }
+            }
+            bool allDied = currentCreatures.Count < 1; // 检查所有生物是否都已经死亡
             // 检查是否所有的生物都已经死亡
             if (allDied)
             {
-                Debug.Log("所有生物都已死亡，生成下一代。");
+                Debug.Log("已灭绝，生成下一代。");
                 if (!importNewGeneration) lastGenerationCreatures = new List<CreatureGenome>(creatures);
                 importNewGeneration = false;
                 creatures.Clear();
@@ -113,7 +125,6 @@ namespace ALUN
             // 计算当前一代的reward平均值，并添加到generationRewards列表中
             float averageFitness = lastGenerationCreatures.Count > 0 ? lastGenerationCreatures.Average(lastGenerationCreatures => lastGenerationCreatures.fitness) : 0f;
             generationFitness.Add(averageFitness);
-            deadCreatures = 0;
             generation++;
             newGeneration = new List<CreatureGenome>();
 
@@ -135,32 +146,15 @@ namespace ALUN
             }
             else
             {
-                AverageFitnessSelectionAndCrossoverMutation(totalReward);
-                // // 在这里添加交叉和变异的代码
-                // for (int i = 0; i < numGenesToAdd; i++)
-                // {
-                //     // 随机选择第一个生物
-                //     CreatureGenome parent1 = lastGenerationCreatures[UnityEngine.Random.Range(0, lastGenerationCreatures.Count)];
-
-                //     // 创建一个新的列表，包含除了 parent1 之外的所有生物
-                //     List<CreatureGenome> otherCreatures = new List<CreatureGenome>(lastGenerationCreatures);
-                //     otherCreatures.Remove(parent1);
-
-                //     // 从新的列表中随机选择第二个生物
-                //     CreatureGenome parent2 = otherCreatures[UnityEngine.Random.Range(0, otherCreatures.Count)];
-
-                //     // 克隆其中一个生物的基因组
-                //     CreatureGenome offspring = CloneGenome(parent1);
-
-                //     // 对克隆得到的基因组进行交叉
-                //     offspring.neuralNetwork.Crossover(parent2.neuralNetwork);
-
-                //     // 对交叉后的基因组进行变异
-                //     offspring.neuralNetwork.Mutate(0.1f - 0.05f * (offspring.fitness / totalReward));
-
-                //     // 将新的基因组添加到新一代的基因组列表中
-                //     newGeneration.Add(offspring);
-                // }
+                switch (selectionStrategy)
+                {
+                    case SelectionStrategy.AverageFitness:
+                        AverageFitnessSelectionAndCrossoverMutation(totalReward);
+                        break;
+                    case SelectionStrategy.RouletteWheel:
+                        RouletteWheelSelectionAndCrossoverMutation(totalReward);
+                        break;
+                }
             }
 
             // 补充前一代的剩余基因
@@ -282,7 +276,7 @@ namespace ALUN
 
         private string GetPopulationSizeProgressBar()
         {
-            int currentPopulation = Mathf.Min(creatures.Count, populationSize);
+            int currentPopulation = Mathf.Min(currentCreatures.Count, populationSize);
             int progress = Mathf.RoundToInt((float)currentPopulation / populationSize * 20);
             string progressBar = "[";
 
@@ -291,7 +285,7 @@ namespace ALUN
                 if (i < progress)
                     progressBar += "#";
                 else
-                    progressBar += " ";
+                    progressBar += "_";
             }
 
             progressBar += "] " + currentPopulation + " / " + populationSize;
@@ -345,7 +339,12 @@ namespace ALUN
             // 获取当前的日期和时间，然后将其格式化为 "yyyyMMdd"
             string date = DateTime.Now.ToString("yyyyMMdd");
             string fileName = $"Export/lastGeneration-{date}.json";
-
+            // 判断文件是否存在
+            if (!System.IO.File.Exists(fileName))
+            {
+                // 如果文件不存在，则直接返回
+                return;
+            }
             // 读取json文件中的基因信息
             string json = System.IO.File.ReadAllText(fileName);
             List<CreatureGenome> importGeneration = JsonConvert.DeserializeObject<List<CreatureGenome>>(json);
@@ -370,13 +369,17 @@ namespace ALUN
         public Vector2 panelPositionOffset = new Vector2(0, 0); // 面板的位置偏移量，默认为零
         public Vector2 panelSize = new Vector2(300f, 200f); // 面板的初始大小
         private List<float> generationFitness = new List<float>();
+        private GUIStyle buttonStyleP;
+        private GUIStyle buttonStyleM;
+        [SerializeField] private Texture2D blackTexture;
         private void OnGUI()
         {
             Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position);
             Vector3 viewportPos = Camera.main.WorldToViewportPoint(transform.position);
+            Vector3 cameraDir = transform.position - Camera.main.transform.position;
 
             // Check if the Transform is inside the camera's viewport
-            if (viewportPos.x >= 0 && viewportPos.x <= 1 && viewportPos.y >= 0 && viewportPos.y <= 1)
+            if (viewportPos.x >= 0 && viewportPos.x <= 1 && viewportPos.y >= 0 && viewportPos.y <= 1 && Vector3.Dot(cameraDir, Camera.main.transform.forward) > 0)
             {
                 guiStyle.normal.textColor = Color.white;
                 float panelX = screenPos.x - panelSize.x / 2; // Subtract half the width
@@ -400,21 +403,21 @@ namespace ALUN
                 labelY += labelMargin; // 增加间距，将 Y 轴位置调整为下一个标签的位置
                 GUI.Label(new Rect(labelX, labelY, labelWidth, labelHeight), "平均奖励: " + GetAverageReward(lastGenerationCreatures).ToString(), guiStyle);
 
-
-                GUIStyle buttonStyleP = new GUIStyle(GUI.skin.button);
-                buttonStyleP.normal.textColor = Color.white; // 按钮文字设置为纯黑色
-
-                GUIStyle buttonStyleM = new GUIStyle(GUI.skin.button);
-                buttonStyleM.normal.textColor = Color.white; // 按钮文字设置为纯黑色
-
                 // 这里使用了前面的代码来设定按钮的位置和大小
                 float buttonX = labelX;
                 float buttonY = labelY + labelMargin;
                 float buttonWidth = 100;
                 float buttonHeight = 30;
-
+                // 创建按钮样式，并设置背景图为黑色背景图
+                buttonStyleP = new GUIStyle(GUI.skin.button);
+                buttonStyleP.normal.background = blackTexture;
+                buttonStyleP.normal.textColor = Color.white;
+                buttonStyleP.border = new RectOffset(10, 10, 10, 10); // 设置圆角大小
+                // buttonStyleM = new GUIStyle(GUI.skin.button);
+                // buttonStyleM.normal.background = blackTexture;
+                // buttonStyleP.normal.textColor = Color.white;
                 // 减少游戏速度的按钮
-                if (GUI.Button(new Rect(buttonX, buttonY, buttonWidth, buttonHeight), "速度 - 0.5", buttonStyleM) && Time.timeScale >= 1.0f)
+                if (GUI.Button(new Rect(buttonX, buttonY, buttonWidth, buttonHeight), "速度 - 0.5", buttonStyleP) && Time.timeScale >= 1.0f)
                 {
                     Time.timeScale = Mathf.Max(0.5f, Time.timeScale - 0.5f);
                 }
@@ -454,59 +457,55 @@ namespace ALUN
 
 
 
-                // 创建 "保存基因" 按钮
-                if (GUI.Button(new Rect(panelXOffset + 10, panelYOffset + panelHeightOffset + 10, 100, 50), "保存基因"))
-                    SaveGeneration();
+                // // 创建 "保存基因" 按钮
+                // if (GUI.Button(new Rect(panelXOffset + 10, panelYOffset + panelHeightOffset + 10, 100, 50), "保存基因"))
+                //     SaveGeneration();
 
-                //创建"读取基因"按钮,并用for循环修改currentCreatures列表中的每一个生物的基因和id
-                if (GUI.Button(new Rect(panelXOffset + 120, panelYOffset + panelHeightOffset + 10, 100, 50), "读取基因"))
-                    LoadGeneration();
+                // //创建"读取基因"按钮,并用for循环修改currentCreatures列表中的每一个生物的基因和id
+                // if (GUI.Button(new Rect(panelXOffset + 120, panelYOffset + panelHeightOffset + 10, 100, 50), "读取基因"))
+                //     LoadGeneration();
             }
-
-            // DrawAverageRewardChart();
         }
-
-        public List<float> ASCIIList = new List<float>();
-        public int lineHeight = 20;
-        public int columnWidth = 20;
-
-        private void DrawAverageRewardChart()
+        // 辅助方法用于创建指定颜色的Texture2D
+        private Texture2D MakeTexture(int width, int height,int radius, Color color)
         {
-            if (generationFitness.Count == 0) return;
-            ASCIIList = new List<float>();
+            // Color[] pixels = new Color[width * height];
+            // for (int i = 0; i < pixels.Length; i++)
+            // {
+            //     pixels[i] = color;
+            // }
 
-            // 找到generationRewards列表中的最大绝对值
-            float maxAbsReward = float.MinValue;
-            foreach (float reward in generationFitness)
+            // Texture2D texture = new Texture2D(width, height);
+            // texture.SetPixels(pixels);
+            // texture.Apply();
+
+            // 创建一个新的Texture2D对象
+            Texture2D texture = new Texture2D(width, height);
+            // 设置Texture2D的所有像素为透明
+            for (int y = 0; y < texture.height; ++y)
             {
-                if (Mathf.Abs(reward) > maxAbsReward)
+                for (int x = 0; x < texture.width; ++x)
                 {
-                    maxAbsReward = Mathf.Abs(reward);
+                    texture.SetPixel(x, y, Color.clear);
                 }
             }
-
-            // 对列表中的每一个数进行等比例的转化
-            for (int i = 0; i < generationFitness.Count; i++)
+            // 在Texture2D的四个角上画出圆角
+            for (int y = 0; y < radius; ++y)
             {
-                // 如果最大绝对值是0，直接把值设为0以避免除以0的情况
-                float currentHeight = maxAbsReward != 0 ? (generationFitness[i] / maxAbsReward) * 10 : 0;
-                if (i < ASCIIList.Count)
+                for (int x = 0; x < radius; ++x)
                 {
-                    ASCIIList[i] = currentHeight;
-                }
-                else
-                {
-                    ASCIIList.Add(currentHeight);
-                }
-
-                // 在这里绘制图表
-                for (int j = 0; j < currentHeight; j++)
-                {
-                    // 注意，Unity的GUI坐标系在屏幕左上角为原点
-                    // 为了在屏幕左下角绘制图形，我们需要根据屏幕高度来调整矩形的y坐标
-                    GUI.Box(new Rect(i * columnWidth, Screen.height - (j + 1) * lineHeight, columnWidth, lineHeight), "#");
+                    if ((x - radius) * (x - radius) + (y - radius) * (y - radius) <= radius * radius)
+                    {
+                        texture.SetPixel(x, y, color);
+                        texture.SetPixel(texture.width - x - 1, y, color);
+                        texture.SetPixel(x, texture.height - y - 1, color);
+                        texture.SetPixel(texture.width - x - 1, texture.height - y - 1, color);
+                    }
                 }
             }
+            // 应用对Texture2D的修改
+            texture.Apply();
+            return texture;
         }
     }
 }

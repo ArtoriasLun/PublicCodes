@@ -63,8 +63,8 @@ namespace ALUN
             {
                 RaycastHit hit = Creature.RaycastForObstacle(position, rayDirections[i], creatureParameters.creatureNeuralInfo.obstacleRayDistance);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
                 obstacleDistances[i] = hit.collider != null ? hit.distance : creatureParameters.creatureNeuralInfo.obstacleRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
-                // 计算射线的仰俯角倾斜并保存到obstacleAngles数组
-                float angle = Mathf.Acos(Vector3.Dot(rayDirections[i], Vector3.up)) * Mathf.Rad2Deg;
+                // 计算障碍物的角度
+                float angle = Vector3.Angle(hit.normal, Vector3.up);
                 obstacleAngles[i] = angle;
                 if (hit.collider != null)
                     Debug.DrawRay(position, rayDirections[i] * obstacleDistances[i], hit.distance <= 1 ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
@@ -82,6 +82,19 @@ namespace ALUN
                 if (food != null)
                     Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * foodDistances[i], hit.distance <= 1 ? Color.red : Color.green);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
             }
+
+            //生物射线检测结果
+            float[] creatureDistances = new float[rayDirections.Length];  // 初始化一个食物数组来存储每个方向的射线距离
+            for (int i = 0; i < rayDirections.Length; i++)
+            {
+                RaycastHit hit = Creature.RaycastForCreature(position, rayDirections[i], creatureParameters.creatureNeuralInfo.foodRayDistance);  // 初始化一个RaycastHit变量，用来存储射线碰撞的信息
+                creatureDistances[i] = hit.collider != null ? hit.distance : creatureParameters.creatureNeuralInfo.foodRayDistance;  // 如果射线碰撞了，存储碰撞距离，否则存储最大距离
+                if (hit.collider != null)
+                    Debug.DrawRay(position + Vector3.up * 0.3f, rayDirections[i] * creatureDistances[i], hit.distance <= 1 ? Color.black : Color.white);  // 在场景中绘制射线，如果碰撞，射线颜色为红色
+            }
+
+
+
             float speed = rb.velocity.magnitude / creatureParameters.creatureGameInfo.moveSpeed;
             // float rotateSpeed = rb.angularVelocity.magnitude / creatureParameters.creatureGameInfo.rotationSpeed;
             // float velocityAngle = Vector3.Angle(rb.velocity, Vector3.right);
@@ -104,13 +117,17 @@ namespace ALUN
             inputs[25] = rb.velocity.x / creatureParameters.creatureGameInfo.moveSpeed;
             inputs[26] = rb.velocity.y / creatureParameters.creatureGameInfo.moveSpeed;
             inputs[27] = rb.velocity.z / creatureParameters.creatureGameInfo.moveSpeed;
-            //新增9个inputs在for循环中
-            for (int i = 28; i < 37; i++)
+            for (int i = 28; i < 36; i++)
             {
                 inputs[i] = obstacleAngles[i - 28] / 180f;
             }
+            //再增加8个inputs
+            for (int i = 36; i < 44; i++)
+            {
+                inputs[i] = creatureDistances[i - 36] / creatureParameters.creatureNeuralInfo.obstacleRayDistance;
+            }
             //有多少inputs?
-            //计算得出inputs数量为37
+            //计算得出inputs数量为44
 
             return inputs;
         }

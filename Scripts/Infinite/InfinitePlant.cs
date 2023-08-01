@@ -104,6 +104,11 @@ public class InfinitePlant : MonoBehaviour, ILocalUpdatable,IGrowable
     {
         return gameObject;
     }
+
+    public int GetCurrentStage()
+    {
+        return currentStage;
+    }
 }
 
 [System.Serializable]
