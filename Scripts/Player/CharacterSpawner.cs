@@ -274,14 +274,17 @@ namespace ALUN
                 float distanceToPlayer = Vector3.Distance(playerPosition, transform.position);
 
                 if (distanceToPlayer <= spawnRadius) // spawnRadius是生成生物的有效半径，需要你自己定义
-                {
-                    currentCreatures.Add(SpawnCreature(spawnIndex));
-                    spawnIndex++;
-                }
+                    SpawnAdd();
                 yield return new WaitForSeconds(spawnInterval);
             }
         }
-
+        public void SpawnAdd()
+        {
+            Creature c = SpawnCreature(spawnIndex);
+            c.owner = this;
+            currentCreatures.Add(c);
+            spawnIndex++;
+        }
         private string GetPopulationSizeProgressBar()
         {
             int currentPopulation = Mathf.Min(currentCreatures.Count, populationSize);

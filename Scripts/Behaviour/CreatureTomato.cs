@@ -42,6 +42,9 @@ namespace ALUN
         Quaternion.Euler(0, -135, 0) * transform.forward // 后右方
     };  // 设定射线方向，包括前、后、左、右及其对角线 
 
+
+
+            int detectedCreatures = 0;
             for (int i = 0; i < rayDirections.Length; i++) // 这是一个for循环，用于遍历所有的射线方向。
             {
                 RaycastHit obstacleHit = RaycastForObstacle(position, rayDirections[i], 2f); // 使用RaycastForObstacle方法，从当前位置向指定方向发射射线，检测是否有障碍物，返回的结果存储在"obstacleHit"中。
@@ -68,9 +71,11 @@ namespace ALUN
                     FitnessForEating(plant.HarvestPlant()); // 调用FitnessForEating方法，对吃食物进行奖励。
                 }
 
-                RaycastHit creatureHit=RaycastForCreature(position, rayDirections[i], 4f);//使用RaycastForCreature方法，从当前位置向指定方向发射射线，检测是否有生物，返回的结果存储在"creatureHit"中。
-
+                RaycastHit creatureHit = RaycastForCreature(position, rayDirections[i], 4f);//使用RaycastForCreature方法，从当前位置向指定方向发射射线，检测是否有生物，返回的结果存储在"creatureHit"中。
+                if (creatureHit.collider != null) detectedCreatures++;
             }
+
+            CheckCreatureCloseEachOther(detectedCreatures);
         }
 
         float checkTime = 1f;
@@ -100,11 +105,38 @@ namespace ALUN
             creatureParameters.creatureGameInfo.nutritionValue += nutrition;
             creatureParameters.creatureNeuralInfo.fitness += nutrition;
         }
-
-        private void CreatureCloseEachOther()
+        /*
+              检测到附近creature距离2，如果有2根射线检测到了，进行繁殖，增加奖励值
+      检测到附近creature距离2，如果有4根射线检测到了，开始减少营养，减少奖励值
+      检测到附近creature距离2，如果没有射线检测到，开始减少营养，减少奖励值
+      检测到附近creature距离2，如果有1或2或3根射线检测到了，不减少营养，增加奖励值
+              */
+        private void CheckCreatureCloseEachOther(int detectedCreatures)
         {
-            
+            if (detectedCreatures == 2)
+            {
+                owner.SpawnAdd();
+                creatureParameters.creatureNeuralInfo.fitness += 1f * Time.timeScale;
+                creatureParameters.creatureGameInfo.nutritionValue += 1f * Time.timeScale;
+            }
+            else if (detectedCreatures == 4)
+            {
+                creatureParameters.creatureNeuralInfo.fitness -= 1f * Time.timeScale;
+                creatureParameters.creatureGameInfo.nutritionValue -= 1f * Time.timeScale;
+            }
+            else if (detectedCreatures == 0)
+            {
+                creatureParameters.creatureNeuralInfo.fitness -= 1f * Time.timeScale;
+                creatureParameters.creatureGameInfo.nutritionValue -= 1f * Time.timeScale;
+            }
+            else if (detectedCreatures == 1 || detectedCreatures == 3)
+            {
+                creatureParameters.creatureNeuralInfo.fitness += 1f * Time.timeScale;
+                creatureParameters.creatureGameInfo.nutritionValue += 1f * Time.timeScale;
+            }
         }
+
+
         private void DrawRay(Vector3 direction, bool raycastHit)
         {
             // 绘制射线，红色表示检测到障碍物，绿色表示没有检测到障碍物

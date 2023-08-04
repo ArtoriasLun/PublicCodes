@@ -9,6 +9,7 @@ namespace ALUN
     public abstract class Creature : MonoBehaviour
     {
         public int id;
+        public CharacterSpawner owner;
         public NeuralNetworkManager neuralNetworkManager;
         public CreatureParametersDataset creatureParametersDataset;
         public CreatureParameters creatureParameters;
