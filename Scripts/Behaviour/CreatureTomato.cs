@@ -22,57 +22,68 @@ namespace ALUN
             foreach (var item in fade)
                 item.Tick();
             if (creatureParameters.creatureGameFlag.isDied) return;
+            neuralNetworkManager.enabled = creatureParameters.creatureGameInfo.nutritionValue < 100f;
             DetectAndDrawRays();
             ConsumeNutrition(creatureParameters.creatureGameInfo.nutritionDecayRate * Time.deltaTime);
         }
         // 检测周围的障碍物和食物给与奖励或惩罚
-        public override void DetectAndDrawRays()
+        public override void DetectAndDrawRays() // 定义一个公共的、可以被子类重写的方法，名为"DetectAndDrawRays"，用于检测和绘制射线。
         {
-            Vector3 position = transform.position + Vector3.up * 0.4f;
-            // 获取最近的障碍物位置
-            Vector3[] rayDirections = new Vector3[] {
-                transform.forward, // 前方
-                -transform.forward,//后方
-                -transform.right, // 左侧
-                transform.right, // 右侧
-                Quaternion.Euler(0, 45, 0) * transform.forward, // 前右方
-                Quaternion.Euler(0, -45, 0) * transform.forward, // 前左方
-                Quaternion.Euler(0, 135, 0) * transform.forward, // 后左方
-                Quaternion.Euler(0, -135, 0) * transform.forward // 后右方
-            };  // 设定射线方向，包括前、后、左、右及其对角线 
+            Vector3 position = transform.position + Vector3.up * 0.4f; // 定义一个三维向量"position"，表示当前物体的位置。这个位置是当前物体的位置加上向上0.4个单位的偏移。
 
-            //检测周围的障碍物和食物
-            for (int i = 0; i < rayDirections.Length; i++)
+            Vector3[] rayDirections = new Vector3[] { // 定义一个三维向量数组"rayDirections"，用于存储射线的方向。
+        transform.forward, // 前方
+        -transform.forward,//后方
+        -transform.right, // 左侧
+        transform.right, // 右侧
+        Quaternion.Euler(0, 45, 0) * transform.forward, // 前右方
+        Quaternion.Euler(0, -45, 0) * transform.forward, // 前左方
+        Quaternion.Euler(0, 135, 0) * transform.forward, // 后左方
+        Quaternion.Euler(0, -135, 0) * transform.forward // 后右方
+    };  // 设定射线方向，包括前、后、左、右及其对角线 
+
+            for (int i = 0; i < rayDirections.Length; i++) // 这是一个for循环，用于遍历所有的射线方向。
             {
-                RaycastHit obstacleHit = RaycastForObstacle(position, rayDirections[i], 1f);
+                RaycastHit obstacleHit = RaycastForObstacle(position, rayDirections[i], 2f); // 使用RaycastForObstacle方法，从当前位置向指定方向发射射线，检测是否有障碍物，返回的结果存储在"obstacleHit"中。
 
-                if (obstacleHit.collider != null)
+                if (obstacleHit.collider != null) // 如果射线碰到了障碍物（即obstacleHit.collider不为空）。
                 {
-                    // 计算障碍物的角度
-                    float angle = Vector3.Angle(obstacleHit.normal, Vector3.up);
-                    // 检查障碍物是否垂直，或者角度是否大于40度
-                    if (angle >= 30)
+                    float angle = Vector3.Angle(obstacleHit.normal, Vector3.up); // 计算障碍物的角度，即障碍物的法线和向上方向的夹角。
+
+                    if (angle >= 30) // 如果角度大于等于30度。
                     {
-                        PenaltyForCollision();
+                        PenaltyForCollision(); // 调用PenaltyForCollision方法，对碰撞进行惩罚。
                     }
                 }
-                else
+                else // 如果射线没有碰到障碍物。
                 {
-                    FitnessForAvoidance();
+                    FitnessForAvoidance(); // 调用FitnessForAvoidance方法，对避开障碍物进行奖励。
                 }
 
                 RaycastHit foodHit;
-                IGrowable plant = RaycastForFood(position, rayDirections[i], 1f, out foodHit);
-                //测试raycast是否真的被创建
-                if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested && plant.GetCurrentStage() > 0)
+                IGrowable plant = RaycastForFood(position, rayDirections[i], 1f, out foodHit); // 使用RaycastForFood方法，从当前位置向指定方向发射射线，检测是否有食物，返回的结果存储在"plant"中，同时将射线碰撞的结果输出到"foodHit"。
+
+                if (plant != null && !plant.GetGameObject().GetComponent<InfinitePlant>().isHarvested && plant.GetCurrentStage() > 0) // 如果射线碰到了食物，且食物没有被收获，且食物的当前阶段大于0。
                 {
-                    FitnessForEating(plant.HarvestPlant());
+                    FitnessForEating(plant.HarvestPlant()); // 调用FitnessForEating方法，对吃食物进行奖励。
                 }
+
+                RaycastHit creatureHit=RaycastForCreature(position, rayDirections[i], 4f);//使用RaycastForCreature方法，从当前位置向指定方向发射射线，检测是否有生物，返回的结果存储在"creatureHit"中。
+
             }
         }
+
+        float checkTime = 1f;
         // 当生物撞到障碍物时，给予惩罚
         private void PenaltyForCollision()
         {
+            //加一个时间间隔，防止每帧都检测
+            if (checkTime > 0)
+            {
+                checkTime -= Time.deltaTime * Time.timeScale;
+                return;
+            }
+            checkTime = 1f;
             creatureParameters.creatureNeuralInfo.fitness -= 1f * Time.timeScale;
             creatureParameters.creatureGameInfo.nutritionValue -= 1f * Time.timeScale;
         }
@@ -88,6 +99,11 @@ namespace ALUN
         {
             creatureParameters.creatureGameInfo.nutritionValue += nutrition;
             creatureParameters.creatureNeuralInfo.fitness += nutrition;
+        }
+
+        private void CreatureCloseEachOther()
+        {
+            
         }
         private void DrawRay(Vector3 direction, bool raycastHit)
         {

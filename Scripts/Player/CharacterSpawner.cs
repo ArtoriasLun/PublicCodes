@@ -33,17 +33,25 @@ namespace ALUN
         [SerializeField] private float spawnRadius = 50f;
         void Awake()
         {
-            blackTexture = MakeTexture(128, 128,5, new Color(0f, 0f, 0f, 0.2f));
-
+            blackTexture = MakeTexture(128, 128, 5, new Color(0f, 0f, 0f, 0.2f));
+            greyTexture = MakeTexture(128, 128, 5, new Color(0.5f, 0.5f, 0.5f, 0.2f));
         }
         private void Start()
         {
             currentCreatures = new List<Creature>();
             panelPositionOffset = new Vector2(((-(float)Screen.width / 2f) + (panelSize.x / 2f) + 30f), 30f);
             if (autoLoadGeneration) LoadGeneration();
-            CreatureNatureDied(null);
 
-
+            if (lastGenerationCreatures.Count < 1)
+            {
+                for (int i = 0; i < populationSize; i++)
+                {
+                    Debug.Log("生成第 " + generation + " 代，第 " + i + " 个生物。" + i % populationSize);
+                    currentCreatures.Add(SpawnCreature(i));
+                }
+            }
+            else
+                CreatureNatureDied(null);
         }
         private void OnApplicationQuit()
         {
@@ -372,6 +380,7 @@ namespace ALUN
         private GUIStyle buttonStyleP;
         private GUIStyle buttonStyleM;
         [SerializeField] private Texture2D blackTexture;
+        [SerializeField] private Texture2D greyTexture;
         private void OnGUI()
         {
             Vector3 screenPos = Camera.main.WorldToScreenPoint(transform.position);
@@ -412,7 +421,8 @@ namespace ALUN
                 buttonStyleP = new GUIStyle(GUI.skin.button);
                 buttonStyleP.normal.background = blackTexture;
                 buttonStyleP.normal.textColor = Color.white;
-                buttonStyleP.border = new RectOffset(10, 10, 10, 10); // 设置圆角大小
+                buttonStyleP.hover.background = greyTexture;
+                // buttonStyleP.border = new RectOffset(10, 10, 10, 10); // 设置圆角大小
                 // buttonStyleM = new GUIStyle(GUI.skin.button);
                 // buttonStyleM.normal.background = blackTexture;
                 // buttonStyleP.normal.textColor = Color.white;
@@ -467,45 +477,36 @@ namespace ALUN
             }
         }
         // 辅助方法用于创建指定颜色的Texture2D
-        private Texture2D MakeTexture(int width, int height,int radius, Color color)
+        public static Texture2D MakeTexture(int width, int height, int radius, Color color)
         {
-            // Color[] pixels = new Color[width * height];
-            // for (int i = 0; i < pixels.Length; i++)
-            // {
-            //     pixels[i] = color;
-            // }
-
-            // Texture2D texture = new Texture2D(width, height);
-            // texture.SetPixels(pixels);
-            // texture.Apply();
-
-            // 创建一个新的Texture2D对象
             Texture2D texture = new Texture2D(width, height);
-            // 设置Texture2D的所有像素为透明
             for (int y = 0; y < texture.height; ++y)
             {
                 for (int x = 0; x < texture.width; ++x)
                 {
-                    texture.SetPixel(x, y, Color.clear);
+                    // 在这里，我们为整个图像设置颜色，而不仅仅是四个角
+                    texture.SetPixel(x, y, color);
                 }
             }
-            // 在Texture2D的四个角上画出圆角
+
+            // 然后我们将四个角设置为透明，以创建圆角效果
             for (int y = 0; y < radius; ++y)
             {
                 for (int x = 0; x < radius; ++x)
                 {
-                    if ((x - radius) * (x - radius) + (y - radius) * (y - radius) <= radius * radius)
+                    if ((x - radius) * (x - radius) + (y - radius) * (y - radius) > radius * radius)
                     {
-                        texture.SetPixel(x, y, color);
-                        texture.SetPixel(texture.width - x - 1, y, color);
-                        texture.SetPixel(x, texture.height - y - 1, color);
-                        texture.SetPixel(texture.width - x - 1, texture.height - y - 1, color);
+                        texture.SetPixel(x, y, Color.clear);
+                        texture.SetPixel(texture.width - x - 1, y, Color.clear);
+                        texture.SetPixel(x, texture.height - y - 1, Color.clear);
+                        texture.SetPixel(texture.width - x - 1, texture.height - y - 1, Color.clear);
                     }
                 }
             }
-            // 应用对Texture2D的修改
+
             texture.Apply();
             return texture;
         }
+
     }
 }
